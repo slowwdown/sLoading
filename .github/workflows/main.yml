@@ -11,19 +11,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send commit info to Discord
+      - name: Send commits to Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
           ACTOR: ${{ github.actor }}
           BRANCH: ${{ github.ref_name }}
-          REPO: ${{ github.repository }}
         run: |
-          COUNT=$(jq '.commits | length' "$GITHUB_EVENT_PATH")
-          COMMITS=$(jq -c '.commits[]' "$GITHUB_EVENT_PATH")
+          if ! jq -e '.commits | length > 0' "$GITHUB_EVENT_PATH" > /dev/null; then
+            echo "No commits to report"
+            exit 0
+          fi
 
           EMBEDS=""
           i=0
-          for COMMIT in $COMMITS; do
+
+          jq -c '.commits[]' "$GITHUB_EVENT_PATH" | while read -r COMMIT; do
             i=$((i+1))
             if [ "$i" -gt 5 ]; then
               break
@@ -42,13 +44,13 @@ jobs:
               }"
           done
 
-          EMBEDS="[${EMBEDS#,}]" # remove leading comma
+          EMBEDS="[${EMBEDS#,}]" # Remove leading comma
 
           curl -H "Content-Type: application/json" \
-               -X POST \
-               -d "{
-                \"username\": \"$ACTOR\",
-                \"avatar_url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
-                \"embeds\": $EMBEDS
-              }" \
-              "$DISCORD_WEBHOOK"
+            -X POST \
+            -d "{
+              \"username\": \"$ACTOR\",
+              \"avatar_url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
+              \"embeds\": $EMBEDS
+            }" \
+            "$DISCORD_WEBHOOK"
