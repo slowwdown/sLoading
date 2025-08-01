@@ -142,7 +142,8 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 ## 👨‍💻 Author
 
 - **GitHub**: [@slowwdown](https://github.com/slowwdown)
-- **Discord**: [sloww dev](https://discord.gg/qtrU6HTVbT)
+- **Discord Server**: [sloww dev](https://discord.gg/qtrU6HTVbT)
+- **Discord**: slowwwdown
 
 ## 🤝 Contributing
 
