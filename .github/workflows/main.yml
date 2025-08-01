@@ -1,56 +1,48 @@
-name: Discord Notify on Push
+name: Notify Discord on Push
 
 on:
   push:
     branches:
       - main
-      - dev
 
 jobs:
-  notify-discord:
+  discord:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send commits to Discord
+      - name: Notify Discord of Commit(s)
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          ACTOR: ${{ github.actor }}
-          BRANCH: ${{ github.ref_name }}
         run: |
-          if ! jq -e '.commits | length > 0' "$GITHUB_EVENT_PATH" > /dev/null; then
-            echo "No commits to report"
-            exit 0
-          fi
+          COMMITS=$(jq -c '.commits[]' $GITHUB_EVENT_PATH | head -n 5)
+          FIELDS=""
 
-          EMBEDS=""
-          i=0
+          while IFS= read -r commit; do
+            SHA=$(echo $commit | jq -r '.id' | cut -c1-7)
+            URL=$(echo $commit | jq -r '.url')
+            MESSAGE=$(echo $commit | jq -r '.message' | head -c 200)
+            AUTHOR=$(echo $commit | jq -r '.author.name')
 
-          jq -c '.commits[]' "$GITHUB_EVENT_PATH" | while read -r COMMIT; do
-            i=$((i+1))
-            if [ "$i" -gt 5 ]; then
-              break
-            fi
-
-            SHA=$(echo "$COMMIT" | jq -r '.id' | cut -c1-7)
-            URL=$(echo "$COMMIT" | jq -r '.url')
-            MSG=$(echo "$COMMIT" | jq -r '.message' | head -c 200)
-            AUTHOR=$(echo "$COMMIT" | jq -r '.author.name')
-
-            EMBEDS="$EMBEDS,
+            FIELDS="$FIELDS,
               {
-                \"title\": \"[api:$BRANCH] 1 new commit\",
-                \"description\": \"[$SHA]($URL) $MSG - $AUTHOR\",
-                \"color\": 7506394
+                \"name\": \"[$SHA] $AUTHOR\",
+                \"value\": \"[$MESSAGE]($URL)\"
               }"
-          done
+          done <<< "$COMMITS"
 
-          EMBEDS="[${EMBEDS#,}]" # Remove leading comma
+          FIELDS=${FIELDS#,}  # Remove leading comma
 
           curl -H "Content-Type: application/json" \
             -X POST \
             -d "{
-              \"username\": \"$ACTOR\",
+              \"username\": \"GitHub Actions\",
               \"avatar_url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
-              \"embeds\": $EMBEDS
+              \"embeds\": [{
+                \"title\": \"📦 New Commit(s) Pushed\",
+                \"description\": \"**Repository:** [${{ github.repository }}](https://github.com/${{ github.repository }})\n**Branch:** \`${{ github.ref_name }}\`\n**Pushed by:** ${{ github.actor }}\",
+                \"fields\": [$FIELDS],
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+                \"color\": 7506394
+              }]
             }" \
-            "$DISCORD_WEBHOOK"
+            $DISCORD_WEBHOOK
