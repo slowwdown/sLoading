@@ -1,48 +1,54 @@
-name: Notify Discord on Push
+name: Discord Notify on Push
 
 on:
   push:
     branches:
       - main
+      - dev
 
 jobs:
-  discord:
+  notify-discord:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Notify Discord of Commit(s)
+      - name: Send commit info to Discord
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          ACTOR: ${{ github.actor }}
+          BRANCH: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          COMMITS=$(jq -c '.commits[]' $GITHUB_EVENT_PATH | head -n 5)
-          FIELDS=""
+          COUNT=$(jq '.commits | length' "$GITHUB_EVENT_PATH")
+          COMMITS=$(jq -c '.commits[]' "$GITHUB_EVENT_PATH")
 
-          while IFS= read -r commit; do
-            SHA=$(echo $commit | jq -r '.id' | cut -c1-7)
-            URL=$(echo $commit | jq -r '.url')
-            MESSAGE=$(echo $commit | jq -r '.message' | head -c 200)
-            AUTHOR=$(echo $commit | jq -r '.author.name')
+          EMBEDS=""
+          i=0
+          for COMMIT in $COMMITS; do
+            i=$((i+1))
+            if [ "$i" -gt 5 ]; then
+              break
+            fi
 
-            FIELDS="$FIELDS,
+            SHA=$(echo "$COMMIT" | jq -r '.id' | cut -c1-7)
+            URL=$(echo "$COMMIT" | jq -r '.url')
+            MSG=$(echo "$COMMIT" | jq -r '.message' | head -c 200)
+            AUTHOR=$(echo "$COMMIT" | jq -r '.author.name')
+
+            EMBEDS="$EMBEDS,
               {
-                \"name\": \"[$SHA] $AUTHOR\",
-                \"value\": \"[$MESSAGE]($URL)\"
+                \"title\": \"[api:$BRANCH] 1 new commit\",
+                \"description\": \"[$SHA]($URL) $MSG - $AUTHOR\",
+                \"color\": 7506394
               }"
-          done <<< "$COMMITS"
+          done
 
-          FIELDS=${FIELDS#,}  # Remove leading comma
+          EMBEDS="[${EMBEDS#,}]" # remove leading comma
 
           curl -H "Content-Type: application/json" \
-            -X POST \
-            -d "{
-              \"username\": \"GitHub Actions\",
-              \"avatar_url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
-              \"embeds\": [{
-                \"title\": \"📦 New Commit(s) Pushed\",
-                \"description\": \"**Repository:** [${{ github.repository }}](https://github.com/${{ github.repository }})\n**Branch:** \`${{ github.ref_name }}\`\n**Pushed by:** ${{ github.actor }}\",
-                \"fields\": [$FIELDS],
-                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
-                \"color\": 7506394
-              }]
-            }" \
-            $DISCORD_WEBHOOK
+               -X POST \
+               -d "{
+                \"username\": \"$ACTOR\",
+                \"avatar_url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
+                \"embeds\": $EMBEDS
+              }" \
+              "$DISCORD_WEBHOOK"
