@@ -1,0 +1,147 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+
+.app {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  filter: hue-rotate(0deg) saturate(1.1) brightness(1.05);
+}
+
+/* Overlay avec effet visuel et logo */
+.logo-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.2);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* Logo au centre */
+.logo-image {
+  object-fit: contain;
+  filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6)) hue-rotate(0deg) saturate(1.1) brightness(1.05);
+  transform: scale(0.2008125);
+  animation: logoAnimation 3s ease-in-out infinite;
+}
+
+/* Logo GitHub en bas à gauche avec languette */
+.github-container {
+  position: fixed;
+  bottom: 20px;
+  left: 40px;
+  z-index: 10;
+}
+
+.github-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.github-link {
+  display: block;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.github-link:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.github-icon {
+  width: 32px !important;
+  height: 32px !important;
+  color: white !important;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Languette au survol */
+.github-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  background-color: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  z-index: 20;
+}
+
+/* Flèche vers le bas */
+.github-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid rgba(0, 0, 0, 0.9);
+}
+
+/* Afficher la languette au survol du conteneur parent */
+.github-wrapper:hover .github-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Animation du logo */
+@keyframes logoAnimation {
+  0% {
+    transform: scale(0.2008125) rotate(0deg);
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6)) hue-rotate(0deg) saturate(1.1) brightness(1.05);
+  }
+
+  25% {
+    transform: scale(0.225) rotate(2deg);
+    filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.7)) hue-rotate(3deg) saturate(1.15) brightness(1.08);
+  }
+
+  50% {
+    transform: scale(0.2008125) rotate(0deg);
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6)) hue-rotate(0deg) saturate(1.1) brightness(1.05);
+  }
+
+  75% {
+    transform: scale(0.225) rotate(-2deg);
+    filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.7)) hue-rotate(-3deg) saturate(1.15) brightness(1.08);
+  }
+
+  100% {
+    transform: scale(0.2008125) rotate(0deg);
+    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.6)) hue-rotate(0deg) saturate(1.1) brightness(1.05);
+  }
+}

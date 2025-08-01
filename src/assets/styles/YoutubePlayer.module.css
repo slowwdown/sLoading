@@ -1,0 +1,16 @@
+.container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 1;
+    /* Changé de -3 à 1 pour être visible */
+    border: 0;
+    height: 100%;
+    width: 100%;
+    filter: blur(3px);
+}
+
+.player {
+    height: 100% !important;
+    width: 100% !important;
+}
