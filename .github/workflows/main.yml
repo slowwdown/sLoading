@@ -1,2 +1,34 @@
-- name: Actions Status Discord
-  uses: sarisia/actions-status-discord@v1.15.3
+name: Notify Discord on Push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  discord:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Discord Notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{
+              \"username\": \"GitHub Actions\",
+              \"avatar_url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
+              \"embeds\": [{
+                \"title\": \"🚀 New Push to main\",
+                \"description\": \"${GITHUB_ACTOR} pushed a commit to \`${GITHUB_REPOSITORY}\`.\",
+                \"fields\": [
+                  {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA::7}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})\"}
+                ],
+                \"color\": 5814783
+              }]
+            }" \
+            $DISCORD_WEBHOOK
