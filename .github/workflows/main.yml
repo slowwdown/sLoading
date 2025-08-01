@@ -10,25 +10,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send Discord Notification
+      - name: Notify Discord of Commit(s)
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
         run: |
+          COMMITS=$(jq -c '.commits[]' $GITHUB_EVENT_PATH | head -n 5)
+          FIELDS=""
+
+          while IFS= read -r commit; do
+            SHA=$(echo $commit | jq -r '.id' | cut -c1-7)
+            URL=$(echo $commit | jq -r '.url')
+            MESSAGE=$(echo $commit | jq -r '.message' | head -c 200)
+            AUTHOR=$(echo $commit | jq -r '.author.name')
+
+            FIELDS="$FIELDS,
+              {
+                \"name\": \"[$SHA] $AUTHOR\",
+                \"value\": \"[$MESSAGE]($URL)\"
+              }"
+          done <<< "$COMMITS"
+
+          FIELDS=${FIELDS#,}  # Remove leading comma
+
           curl -H "Content-Type: application/json" \
             -X POST \
             -d "{
               \"username\": \"GitHub Actions\",
               \"avatar_url\": \"https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png\",
               \"embeds\": [{
-                \"title\": \"🚀 New Push to main\",
-                \"description\": \"${GITHUB_ACTOR} pushed a commit to \`${GITHUB_REPOSITORY}\`.\",
-                \"fields\": [
-                  {\"name\": \"Commit\", \"value\": \"[\`${GITHUB_SHA::7}\`](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})\"}
-                ],
-                \"color\": 5814783
+                \"title\": \"📦 New Commit(s) Pushed\",
+                \"description\": \"**Repository:** [${{ github.repository }}](https://github.com/${{ github.repository }})\n**Branch:** \`${{ github.ref_name }}\`\n**Pushed by:** ${{ github.actor }}\",
+                \"fields\": [$FIELDS],
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",
+                \"color\": 7506394
               }]
             }" \
             $DISCORD_WEBHOOK
